@@ -9,7 +9,6 @@
 package kobject
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -80,16 +79,7 @@ func (c *Client) Receive() (*Event, error) {
 		}
 
 		// We've completed reading, now parse the Event.
-
-		// Fields are NULL-delimited.  Expect at least two fields, though the
-		// first is ignored because it provides identical information to fields
-		// which occur later on in the easy to parse KEY=VALUE format.
-		fields := bytes.Split(c.b[:n], []byte{0x00})
-		if len(fields) < 2 {
-			return nil, io.ErrUnexpectedEOF
-		}
-
-		return parseEvent(fields[1:])
+		return parseEvent(c.b, n)
 	}
 }
 

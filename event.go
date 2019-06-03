@@ -1,6 +1,8 @@
 package kobject
 
 import (
+	"bytes"
+	"io"
 	"strconv"
 	"strings"
 )
@@ -31,12 +33,24 @@ type Event struct {
 	// Values contains arbitrary key/value pairs which are not present in
 	// all Events.
 	Values map[string]string
+
+	// Message contains the original raw event
+	Message []byte
 }
 
 // parseEvent parses an Event from a series of KEY=VALUE pairs.
-func parseEvent(fields [][]byte) (*Event, error) {
+func parseEvent(message []byte, messageLen int) (*Event, error) {
+	// Fields are NULL-delimited.  Expect at least two fields, though the
+	// first is ignored because it provides identical information to fields
+	// which occur later on in the easy to parse KEY=VALUE format.
+	fields := bytes.Split(message[:messageLen], []byte{0x00})
+	if len(fields) < 2 {
+		return nil, io.ErrUnexpectedEOF
+	}
+
 	e := &Event{
-		Values: make(map[string]string),
+		Values:  make(map[string]string),
+		Message: message[:messageLen],
 	}
 
 	for f := range fields {
